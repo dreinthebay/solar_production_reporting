@@ -132,3 +132,6 @@ config.ini
 
 #testegauge
 /testegauge
+
+#raw data files
+/raw_data
