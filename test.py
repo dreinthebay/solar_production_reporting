@@ -2,7 +2,7 @@ from APIDataRetriever.APIDataGetter import APIDataConnector
 from APIDataRetriever.SolarEdgeAPI import SolarEdgeAPI
 from APIDataRetriever.SolarEdgeEnergySiteMeterAPI import SolarEdgeEnergySiteMeterAPI
 from APIDataRetriever.SolarEdgeEnergyComponentAPI import SolarEdgeEnergyComponentAPI
-
+from APIDataRetriever.eGaugeAPI import EgaugeAPI
 import pprint
 
 from config import config
@@ -89,6 +89,40 @@ def site_component_prodution_test():
 	print(scp.company_name)
 	scp.run_all_component_energy()
 
+def daily_site_production_load():
+	_start = '2020-03-01'
+	_end = '2020-03-02'
+	_timeunit = 'DAY'
+	sesm = SolarEdgeEnergySiteMeterAPI(company_name='test_company_name',start_date=_start,end_date=_end,time_unit=_timeunit)
+	sesm.run_bulk_energy()
+
+def eGauge_test_dev():
+	_start = '2020-03-01'
+	_end = '2020-03-04'
+	eg = EgaugeAPI(start_date=_start,end_date=_end)
+
+	print(eg.start_date)
+
+	#eg.date_loop()
+
+	eg.run_site_production()
+
+def eGauge_test_csv_dev():
+	_start = '2020-03-01'
+	_end = '2020-03-04'
+	eg = EgaugeAPI(start_date=_start,end_date=_end)
+
+	print(eg.start_date)
+
+	#eg.date_loop()
+
+	#eg.run_site_production()
+
+	eg.get_csv_data_all_time()
+
+
+
+
 def main():
 
 	#api_test()
@@ -99,7 +133,13 @@ def main():
 
 	#site_meter_production_test()
 
-	site_component_prodution_test()
+	#site_component_prodution_test()
+
+	#daily_site_production_load()
+
+	#eGauge_test_dev()
+
+	eGauge_test_csv_dev()
 
 if __name__ == '__main__':
 	main()
