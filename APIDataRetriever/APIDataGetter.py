@@ -101,10 +101,11 @@ class APIDataConnector(object):
 	def get_credentials(self, data_provider_company):
 		
 		section = data_provider_company.lower()
+		print('the section is ', section)
 
 		params = config(section=section)
 
-		params.setdefault('username',None)
+		#params.setdefault('username',None)
 		
 		# get initialization parameters, use none if not provided
 		self.username = params.get('username',None)
@@ -146,12 +147,18 @@ class APIDataConnector(object):
 			r = requests.get(url, auth = self.auth)
 
 			#print(r)
-		
-			payload = r.json()
+			try:
+				payload = r.json()
+				
+			except Exception as e:
+
+				payload = None
 		
 		except Exception as e:
 		
 			raise e
+
+			payload = None
 		
 		return payload
 
@@ -192,6 +199,16 @@ class APIDataConnector(object):
 
 		return True
 
+	def write_csv_to_file(self, payload, file):
+			
+		with open(file, 'w+') as f:
+
+			f.write(payload)
+			
+		print('data succesfully written to file')
+
+		return True
+
 	def append_json_to_file(self,payload,file):
 
 		pass
@@ -201,8 +218,14 @@ class APIDataConnector(object):
 		payload, empty_payload = self.verify_payload_not_empty(payload)
 
 		file = self.make_file_path(file_name, sub_directory)
+
+		if str(file_name)[-3:].lower() == 'csv':
+			print('in csv write...')
+			clean_write = self.write_csv_to_file(payload, file)
 		
-		clean_write = self.write_json_to_file(payload, file)
+		else:
+		
+			clean_write = self.write_json_to_file(payload, file)
 		
 		return clean_write
 
