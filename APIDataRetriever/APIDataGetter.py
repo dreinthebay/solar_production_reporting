@@ -220,7 +220,7 @@ class APIDataConnector(object):
 		file = self.make_file_path(file_name, sub_directory)
 
 		if str(file_name)[-3:].lower() == 'csv':
-			print('in csv write...')
+			#print('in csv write...')
 			clean_write = self.write_csv_to_file(payload, file)
 		
 		else:
@@ -269,8 +269,9 @@ class APIDataConnector(object):
 if __name__ == '__main__':
 
 	c = APIDataConnector(data_provider_company='Solaredge')
+	#print(dir(APIDataConnector))
+	#print(help(c))
 	#print(c.username,c.password)
 	print(c.API_KEY)
 	print(c.app_folder)
-	#print(help(c))
 	print(c.set_timing())
