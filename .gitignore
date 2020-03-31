@@ -135,3 +135,6 @@ config.ini
 
 #raw data files
 /raw_data
+
+# egauge keys
+New Columbia eGauges.xlsx
