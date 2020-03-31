@@ -107,6 +107,12 @@ def eGauge_test_dev():
 
 	eg.run_site_production()
 
+def eGauge_load_sites():
+	_start = '2020-03-01'
+	_end = '2020-03-04'
+	eg = EgaugeAPI(start_date=_start,end_date=_end)
+	eg.load_site_keys()
+
 def eGauge_test_csv_dev():
 	_start = '2020-03-01'
 	_end = '2020-03-04'
@@ -120,7 +126,19 @@ def eGauge_test_csv_dev():
 
 	eg.get_csv_data_all_time()
 
+def eGauge_run_all_sites():
+	_start = '2020-03-01'
+	_end = '2020-03-04'
+	eg = EgaugeAPI(start_date=_start,end_date=_end)
 
+	eg.run_all_sites()
+
+
+def special_maulik_ask():
+	_start = '2020-02-01'
+	_end = '2020-03-01'
+	eg = EgaugeAPI(start_date=_start,end_date=_end)
+	eg.special_date_loop()
 
 
 def main():
@@ -139,7 +157,13 @@ def main():
 
 	#eGauge_test_dev()
 
-	eGauge_test_csv_dev()
+	#eGauge_test_csv_dev()
+
+	#eGauge_load_sites()
+
+	#eGauge_run_all_sites()
+
+	special_maulik_ask()
 
 if __name__ == '__main__':
 	main()
