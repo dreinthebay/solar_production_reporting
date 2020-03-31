@@ -130,6 +130,10 @@ cloudsql.ini
 # .ini config files
 config.ini
 
+# ssh keys
+ncs_root.pem
+ncs_root.ppk
+
 #testegauge
 /testegauge
 
