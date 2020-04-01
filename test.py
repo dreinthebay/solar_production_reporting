@@ -155,7 +155,7 @@ def main():
 
 	#daily_site_production_load()
 
-	#eGauge_test_dev()
+	eGauge_test_dev()
 
 	#eGauge_test_csv_dev()
 
@@ -163,7 +163,7 @@ def main():
 
 	#eGauge_run_all_sites()
 
-	special_maulik_ask()
+	#special_maulik_ask()
 
 if __name__ == '__main__':
 	main()

@@ -83,9 +83,15 @@ class APIDataConnector(object):
 		
 		return path_existed
 
+	# TODO make better check on production paths
 	def make_file_path(self, file_name, sub_directory=None):
-				
+		
 		folder_path = os.path.join(self.app_folder, 'raw_data', self.company_name, self.equipment_company_name, sub_directory)
+
+		if sub_directory and  sub_directory.lower().find('production') > -1:
+
+			folder_path = self.make_production_file_path(folder_path)
+		
 
 		self.setup_directories(folder_path)
 
@@ -93,7 +99,17 @@ class APIDataConnector(object):
 
 		return file_path
 
+		# TODO check for dates being true date times, or wrong date formats
+	def make_production_file_path(self, folder_path):
+		
+		year = str(self.start_date)[:4]
 
+		month = str(self.start_date)[5:7]
+
+		folder_path = os.path.join(folder_path, year, month)
+
+		return folder_path
+	
 	def get_app_dir(self):
 		
 		return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
