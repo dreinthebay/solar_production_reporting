@@ -71,6 +71,37 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return None
 
+	def get_site_production(self,site_id,start_date,end_date):
+		# gets the production data for start and end date of egauge site
+
+		site_production_xml_url = 'http://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
+			site_id,end_date,start_date)
+
+		payload = self.call_api(site_production_xml_url)
+
+		return payload
+
+		
+	def run_site_production(self,site_id,start_date,end_date):
+
+		payload = self.get_site_production(site_id,start_date,end_date)
+
+		file_name = '{}_to_{}_production_for_{}.txt'.format(site_id,start_date,end_date)
+
+		return self.write_payload(payload, file_name, 'production'), file_name
+
+	def run_bulk_production(self, start_date, end_date):
+		clean_run = True
+		sites = self.load_site_keys()
+		file_site_dict = {}
+		for site in sites:
+			success, file_name = self.run_site_production(site,start_date,end_date)
+			if success:
+				file_site_dict[site] = file_name
+			else:
+				file_site_dict[site] = None
+				clean_run = False
+		return clean_run, file_site_dict
 
 	# TODO standardize
 	def run_site_production(self):
@@ -338,7 +369,11 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		
 		#print(sites.head())
 		
+		# gets list of items ex. eGauge44712
 		sites = list(sites['Meter Name'])
+
+		# select only site id ex. 44712
+		sites = list(map(lambda x: x[-5:],sites))
 		
 		print('eGaguge site list: \n',sites)
 		
@@ -360,7 +395,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 			i += 1
 
-		pass
+		return success, self.data
 
 
 	def run_all_sites(self):
