@@ -47,7 +47,10 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 	
 	def get_site_id(self):
 
-		self.api_site = config(section='egauge')['devaddr']
+		try:
+			self.api_site = config(section='egauge')['site_id']
+		except:
+			self.api_site = 'egauge33740.egaug.es/'
 
 		pass
 
@@ -74,7 +77,9 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		
 		self.date_loop()
 		
-		file_name = '{}_production_from_{}_to_{}.json'.format(self.site_name,str(self.start_date.date()),str(self.end_date.date()))
+		#file_name = '{}_production_from_{}_to_{}.json'.format(self.site_name,str(self.start_date.date()),str(self.end_date.date()))
+		# business request on naming convention
+		file_name = '{}_to_{}_production_for_{}.json'.format(str(self.start_date.date()),str(self.end_date.date()),self.site_name)
 		
 		self.write_payload(self.data, file_name, 'production')
 		
@@ -89,7 +94,9 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 	#TODO break this method up
 	def date_loop(self):
-		
+		'''
+		This function gets production data only for each day in a date range for one site
+		'''
 		cur_date = self.start_date
 
 		self.get_site_id()
@@ -117,6 +124,8 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 			print(url)
 
 			payload = self.call_api(url)
+
+			print(str(payload)[:100])
 
 			#print(payload,'\n\n')
 
@@ -266,7 +275,10 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 	def get_csv_data_all_time(self):
 
 		'''
-		# get day of data
+		This function gets data from all time, regardless of date range passed to the object
+		This function works for only one site
+		# 
+		get day of data
 		future = int(self.end_date.replace(tzinfo=timezone.utc).timestamp())
 		past = int(self.start_date.replace(tzinfo=timezone.utc).timestamp())
 		url = 'http://{}/cgi-bin/egauge-show?c&T={},{}'.format(self.api_site, future, past)
@@ -285,7 +297,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		payload = r.text
 		
 		# make new file
-		file_name = '{0}_all_system_production_to_{1}.txt'.format(self.site_name
+		file_name = '{0}_all_system_production_to_{1}.csv'.format(self.site_name
 			,self.end_date.date())
 		sub_directory = 'production'
 		file = self.make_file_path(file_name, sub_directory)
@@ -352,6 +364,9 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 
 	def run_all_sites(self):
+		'''
+		This method gets all daily data from a site over all history  
+		'''
 
 		sites = self.load_site_keys()
 
