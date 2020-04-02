@@ -8,6 +8,8 @@ import xml.etree.ElementTree as ET # to parse XML
 import pprint # used for testing, can remove
 import csv # unused for testing
 import pandas as pd # for excel loading, parsing
+from requests import ReadTimeout, ConnectTimeout, HTTPError, Timeout, ConnectionError
+
 
 #class EgaugeAPI(object):
 class EgaugeAPI(APIDataConnector):
@@ -35,35 +37,106 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		self.end_date = datetime.datetime.strptime(self.end_date, '%Y-%m-%d')
 
-		self.site_name = '33740'
+		# deprecated
+		self.site_name = '37006'
 
+		# deprecated
 		self.get_site_id()
 
+		# deprecated
 		self.REG = 'gen'
 
+		# deprecated
 		self.data = {}
 
+		self.error_list = []
 
-	
-	def get_site_id(self):
+	def get_site_production(self,site_id,start_date,end_date):
+		'''
+		creates url for api and makes the api call
+		returns the api payload text (which maybe empty) 
+		'''
+		# gets the production data for start and end date of egauge site
 
-		try:
-			self.api_site = config(section='egauge')['site_id']
-		except:
-			self.api_site = 'egauge33740.egaug.es/'
+		site_production_xml_url = 'https://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
+			site_id,end_date,start_date)
 
-		pass
+		payload = self.call_api(site_production_xml_url)
 
-	def make_api_url(self, future, past):
+		return payload
 
-		url = 'http://{}/cgi-bin/egauge-show?a&T={},{}'.format(self.api_site, future, past)
+	# this needs to return the full path of the file		
+	def run_site_production(self,site_id,start_date,end_date):
+		'''
+		retrieves and writes raw data to production file
+		returns success of file write and the full path of the new file
+		'''
 
-		return url
+		payload = self.get_site_production(site_id,start_date,end_date)
+
+		file_name = '{}_to_{}_production_for_{}.txt'.format(
+			site_id,str(start_date.date()),str(end_date.date())
+			)
+
+		return self.write_payload(payload, file_name, 'production')
+
+	# TODO: Reflect on the dictionary. Potentially make this a list?
+	def run_bulk_production(self):
+		'''
+		retrieves and writes data for each site
+		returns whether the run had no errors (boolean) and a dictionary of each site name and full filepath of payload
+		'''
+		clean_run = True # true if no errors during run, false if any error
+
+		start_date = self.start_date # the start date, in the past
+		
+		end_date = self.end_date # the end date, more recent
+		
+		sites = self.load_site_keys() # gets all egauge sites
+		
+		file_site_dict = {} # initialize dictionary of sites and payloads
+		
+		i = 0 # iterater for debugging
+		
+		# loop through all sites and get production
+		for site in sites:
+		
+			print('{}. {} fetching data ...'.format(i,site))
+		
+			success, file_path = self.run_site_production(site,start_date,end_date)
+		
+			if success:
+		
+				file_site_dict[site] = file_path
+		
+			else:
+				# TODO: make better error handling
+				# throw errors
+				print('FAILURE TO LOAD SITE ',site)
+		
+				self.error_list.append(site) # append to error list?
+		
+				file_site_dict[site] = None # add empty entry
+		
+				clean_run = False # add flag
+		
+			i += 1
+		
+		return clean_run, file_site_dict
+
 
 	# TODO: Move this function to the APIDataGetter file
+	# TODO: remove text, handle api results better
+	# TODO: handle errors from requests
+	# https://stackoverflow.com/questions/16511337/correct-way-to-try-except-using-python-requests-module
+	# https://stackoverflow.com/questions/9054820/python-requests-exception-handling
 	def call_api(self, url):
 
-		r = requests.get(url)
+		try:
+			r = requests.get(url)
+		except Exception as e:
+			raise e
+			return None
 
 		if r.text:
 			
@@ -71,40 +144,19 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return None
 
-	def get_site_production(self,site_id,start_date,end_date):
-		# gets the production data for start and end date of egauge site
 
-		site_production_xml_url = 'http://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
-			site_id,end_date,start_date)
+	# deprecated
+	def make_api_url(self, future, past):
 
-		payload = self.call_api(site_production_xml_url)
+		url = 'https://egauge{}.egaug.es//cgi-bin/egauge-show?a&T={},{}'.format(self.api_site, future, past)
 
-		return payload
+		return url
 
-		
-	def run_site_production(self,site_id,start_date,end_date):
 
-		payload = self.get_site_production(site_id,start_date,end_date)
 
-		file_name = '{}_to_{}_production_for_{}.txt'.format(site_id,start_date,end_date)
-
-		return self.write_payload(payload, file_name, 'production'), file_name
-
-	def run_bulk_production(self, start_date, end_date):
-		clean_run = True
-		sites = self.load_site_keys()
-		file_site_dict = {}
-		for site in sites:
-			success, file_name = self.run_site_production(site,start_date,end_date)
-			if success:
-				file_site_dict[site] = file_name
-			else:
-				file_site_dict[site] = None
-				clean_run = False
-		return clean_run, file_site_dict
-
+	# deprecated
 	# TODO standardize
-	def run_site_production(self):
+	def run_site_production_old(self):
 		
 		self.date_loop()
 		
@@ -116,6 +168,17 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		
 		return True
 
+	# deprecated
+	def get_site_id(self):
+
+		try:
+			self.api_site = config(section='egauge')['site_id']
+		except:
+			self.api_site = 'egauge37006.egaug.es/'
+
+		pass
+
+	# deprecated
 	# TODO
 	def get_delta_energy(self, payload):
 
@@ -123,6 +186,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		#{'site':'1234fgasdf','data':{'units':'Wh','dates':{'2019-03-01':12341}}}
 
+	# deprecated
 	#TODO break this method up
 	def date_loop(self):
 		'''
@@ -202,6 +266,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return self.data
 
+	# only for special project
 	def special_date_loop(self):
 		'''
 		special date loop gets data between the start and end periods, which may not be daily.
@@ -379,6 +444,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		
 		return sites
 
+	# deprecated
 	def run_all_sites_date_range(self):
 		
 		sites = self.load_site_keys()
@@ -391,13 +457,13 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 			
 			self.api_site = str(site) + '.egaug.es/'
 			
-			self.run_site_production()
+			self.run_site_production_old()
 
 			i += 1
 
 		return success, self.data
 
-
+	# deprecated
 	def run_all_sites(self):
 		'''
 		This method gets all daily data from a site over all history  
