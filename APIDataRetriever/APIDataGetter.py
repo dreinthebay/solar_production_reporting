@@ -243,7 +243,7 @@ class APIDataConnector(object):
 		
 			clean_write = self.write_json_to_file(payload, file)
 		
-		return clean_write
+		return clean_write, file
 
 	def load_payload_to_memory(self, file_name, sub_directory=None):
 		
