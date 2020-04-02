@@ -92,7 +92,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		
 		end_date = self.end_date # the end date, more recent
 		
-		sites = self.load_site_keys() # gets all egauge sites
+		sites = self.get_site_list() # gets all egauge sites
 		
 		file_site_dict = {} # initialize dictionary of sites and payloads
 		
@@ -266,6 +266,62 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return self.data
 
+	def load_site_keys(self):
+		'''
+		This method will select the site names from an excel file that was provided by the company
+		Returns a list of site names to be used for api calls
+		'''
+		file_name = 'New Columbia eGauges.xlsx'
+		
+		sites = pd.read_excel(file_name)
+		
+		#print(sites.head())
+		
+		# gets list of items ex. eGauge44712
+		sites = list(sites['Meter Name'])
+
+		# select only site id ex. 44712
+		sites = list(map(lambda x: x[-5:],sites))
+		
+		print('eGaguge site list: \n',sites)
+	
+		return sites
+
+	def get_site_list(self):
+
+		sites = self.load_site_keys()
+
+		ignore_list = self.load_ignored_sites()
+
+		non_ignored_sites = []
+
+		non_ignored_sites = [x for x in sites if x[0] not in ignore_list] # fancy
+
+		'''
+		non_ignored_sites = []
+
+		for site in sites:
+
+			if site not in ignore_list:
+
+				non_ignored_sites.append(site)
+		'''
+		return non_ignored_sites
+
+
+
+	
+	def load_ignored_sites(self):
+
+		file_name = 'system_ignore_list.csv'
+
+		df = pd.read_csv(file_name)
+
+		ignore_list = list(df['Ignore list'])
+
+		return ignore_list
+
+
 	# only for special project
 	def special_date_loop(self):
 		'''
@@ -279,7 +335,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		cur_date = self.start_date
 
-		sites = self.load_site_keys()
+		sites = self.get_site_list()
 		
 		self.data['sites'] = {}
 
@@ -423,31 +479,11 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		#print()
 		return self.write_payload(payload, file_name, 'production')
 
-	def load_site_keys(self):
-		'''
-		This method will select the site names from an excel file that was provided by the company
-		Returns a list of site names to be used for api calls
-		'''
-		file_name = 'New Columbia eGauges.xlsx'
-		
-		sites = pd.read_excel(file_name)
-		
-		#print(sites.head())
-		
-		# gets list of items ex. eGauge44712
-		sites = list(sites['Meter Name'])
-
-		# select only site id ex. 44712
-		sites = list(map(lambda x: x[-5:],sites))
-		
-		print('eGaguge site list: \n',sites)
-		
-		return sites
 
 	# deprecated
 	def run_all_sites_date_range(self):
 		
-		sites = self.load_site_keys()
+		sites = self.get_site_list()
 		
 		i = 0
 
@@ -469,7 +505,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		This method gets all daily data from a site over all history  
 		'''
 
-		sites = self.load_site_keys()
+		sites = self.get_site_list()
 
 		print('looping through sites\nS i t e \n--------------')
 
