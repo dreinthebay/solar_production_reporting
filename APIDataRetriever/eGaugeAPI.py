@@ -58,7 +58,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		'''
 		# gets the production data for start and end date of egauge site
 
-		site_production_xml_url = 'https://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
+		site_production_xml_url = 'http://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
 			site_id,end_date,start_date)
 
 		payload = self.call_api(site_production_xml_url)
