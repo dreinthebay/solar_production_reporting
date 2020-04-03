@@ -2,7 +2,7 @@ from ProductionLoader import ProductionLoader
 
 class SolarEdgeSiteProductionLoader(ProductionLoader):
 	"""docstring for SolarEdgeSiteProductionLoader"""
-	def __init__(self,cloud_connect=False, company_name='MassAm'):
+	def __init__(self,cloud_connect=False, company_name='NCS'):
 		super(SolarEdgeSiteProductionLoader, self).__init__(company_name=company_name)
 		
 		self.equipment_company_name = 'SolarEdge'

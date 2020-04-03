@@ -5,7 +5,7 @@ class ProductionLoader(DataLoader):
 	"""docstring for ProductionLoader
 	This class loads production for solaredge and powerdash components 
 	"""
-	def __init__(self, cloud_connect=False, company_name='MassAm'):
+	def __init__(self, cloud_connect=False, company_name='NCS'):
 		super(ProductionLoader, self).__init__(cloud_connect=cloud_connect, company_name=company_name)
 
 		self.equipment_company_name = 'generic'
