@@ -35,13 +35,15 @@ class SolarEdgeEnergySiteMeterAPI(SolarEdgeAPI):
 		r = self.get_bulk_energy()
 
 		file_name = 'bulk_energy_' + self.start_date + '.json'
+
+		success, file_path = self.write_payload(payload=r, file_name=file_name, sub_directory='site_production')
 		
-		return self.write_payload(payload=r, file_name=file_name, sub_directory='site_production'), file_name
+		return success, file_path
 	
 if __name__ == '__main__':
 
 	company_name = ''
-	# TEST MASSAM
+	
 	API_KEYS = {'':''}
 	
 	args = {'API_KEY': API_KEYS[company_name],'start_date':'2020-02-01', 'end_date':'2020-02-29',
