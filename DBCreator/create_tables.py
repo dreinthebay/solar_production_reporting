@@ -8,6 +8,100 @@ from config import config
 # http://www.postgresqltutorial.com/postgresql-unique-constraint/
 # http://www.postgresqltutorial.com/postgresql-identity-column/
 
+def create_meter_reads_table(cloud_connect=True):
+    commands = (
+        """
+        DROP TABLE IF EXISTS public.meter_reads CASCADE;
+        """,
+        """
+        CREATE TABLE public.meter_reads(
+            id SERIAL PRIMARY KEY,
+            equipment_id VARCHAR(30),
+            date timestamp NOT NULL,
+            header VARCHAR(30),
+            value numeric,
+            created_on TIMESTAMP default NOW()
+        );
+        """
+        )
+    
+    return run_query(commands,cloud_connect)
+
+def create_site_inverter_production(cloud_connect=True):
+    commands = (
+        """
+        DROP TABLE IF EXISTS public.site_inverter_production CASCADE;
+        """,
+        """
+        CREATE TABLE public.site_inverter_production(
+            id SERIAL PRIMARY KEY,
+            equipment_id VARCHAR(30),
+            data_source VARCHAR(50),
+            date timestamp NOT NULL,
+            value numeric,
+            unit varchar(10),
+            created_on TIMESTAMP default NOW()
+        );
+        """
+        )
+    
+    return run_query(commands,cloud_connect)
+
+def create_expected_production_table(cloud_connect=True):
+    commands = (
+        """ DROP TABLE IF EXISTS public.expected_production;
+        """,
+        """
+        CREATE TABLE expected_production
+           (
+               id SERIAL PRIMARY KEY,
+               site_id VARCHAR(30),
+               date TIMESTAMP NOT NULL,
+               expected_production numeric,
+               created_on TIMESTAMP default NOW()
+           );
+        """)
+    return run_query(commands,cloud_connect)
+
+def create_projects_table(cloud_connect=True):
+    commands = ( 
+    """
+    DROP TABLE IF EXISTS public.projects CASCADE;
+    """,
+    """
+    CREATE TABLE public.projects(
+        site_id varchar(12),
+        name varchar(100),
+        ato_date timestamp,
+        contract_id VARCHAR(100),
+        srec_id VARCHAR(100),
+        parent_company_id VARCHAR(100),
+        address VARCHAR(200),
+        city VARCHAR(200),
+        state CHAR(2),
+        zip VARCHAR(12)
+    );
+    """)
+
+    return run_query(commands,cloud_connect)
+
+def create_daily_meter_generation_table(cloud_connect=True):
+    commands = (
+        """ DROP TABLE IF EXISTS public.daily_meter_generation;
+        """,
+        """
+        CREATE TABLE daily_meter_generation
+           (
+               id SERIAL PRIMARY KEY,
+               equipment_id VARCHAR(30),
+               date TIMESTAMP NOT NULL,
+               generation numeric,
+               unit VARCHAR(20),
+               created_on TIMESTAMP default NOW()
+           );
+        """)
+    return run_query(commands,cloud_connect)    
+
 def create_component_production_table(cloud_connect=True):
     commands = ( 
     """
@@ -66,21 +160,8 @@ def create_component_details_table(cloud_connect=True):
 
     return run_query(commands,cloud_connect)
 
-def create_expected_production_table(cloud_connect=True):
-    commands = (
-        """ DROP TABLE IF EXISTS public.expected_production;
-        """,
-        """
-        CREATE TABLE expected_production
-           (
-               id SERIAL PRIMARY KEY,
-               site_id VARCHAR(30),
-               date TIMESTAMP NOT NULL,
-               expected_production numeric,
-               created_on TIMESTAMP default NOW()
-           );
-        """)
-    return run_query(commands,cloud_connect)
+
+
 
 def create_production_table(cloud_connect=True):
     commands = ( 
@@ -146,13 +227,13 @@ def create_site_owner_table(cloud_connect=True):
 
 def create_all_tables(cloud_connect=True,company_name=None):
     """ create tables in the PostgreSQL database"""
-    print('creating production table: ', create_production_table(cloud_connect))
-    print('creating site table: ', create_site_table(cloud_connect))
-    print('creating site owner table: ', create_site_owner_table(cloud_connect))
-    print('creating component production table: ', create_component_production_table(cloud_connect))
-    print('creating component details table: ', create_component_details_table(cloud_connect))
-    print('creating weather table: ', create_weather_table(cloud_connect))
-    #print('creating communication table: ', create_communication_interval_per_site_id(cloud_connect))    
+    print('creating meter_reads table: ', create_meter_reads_table(cloud_connect))
+    print('create site_inverter_production table: ', create_site_inverter_production(cloud_connect))
+    print('create expected_production table: ', create_expected_production_table(cloud_connect))
+    print('creating projects table: ', create_projects_table(cloud_connect))
+    print('create daily_meter_generation table: ', create_daily_meter_generation_table(cloud_connect=cloud_connect))
+    print('create production table: ', create_production_table(cloud_connect))
+
     return True
 
 def connect_to_postgres(cloud_connect=True):
@@ -172,13 +253,13 @@ def connect_to_postgres(cloud_connect=True):
         #    return config(filename='barrier_cloudsql.ini')
 
         #return config(filename='aws_production.ini')
-        return config()
+        return config(section='postgresql')
 
     else:
 
         print('Connection type: Localhost')
 
-        return config(filename='database.ini')
+        return config(section='localhost')
 
 def run_query(commands,cloud_connect=True):
     conn = None
