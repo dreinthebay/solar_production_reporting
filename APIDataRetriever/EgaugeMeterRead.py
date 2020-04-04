@@ -6,6 +6,7 @@ class EgaugeMeterReads(EgaugeAPI):
 	"""docstring for EgaugeMeterReads"""
 	def __init__(self, date, company_name='NCS'):
 		super(EgaugeMeterReads, self).__init__(start_date=date,end_date=None,company_name=company_name)
+		
 		self.date = datetime.datetime.strptime(date, '%Y-%m-%d')
 
 		
@@ -49,7 +50,6 @@ class EgaugeMeterReads(EgaugeAPI):
 		print('\n\n\n\n\n\n\n\n\n\nERROR LIST:\nThese sites had errors in data fetching...\n',self.error_list)
 		
 		return clean_run, file_site_dict
-
 
 	def run_site_meter_read(self, site_id, date):
 
