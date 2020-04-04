@@ -3,6 +3,10 @@ from APIDataRetriever.SolarEdgeAPI import SolarEdgeAPI
 from APIDataRetriever.SolarEdgeEnergySiteMeterAPI import SolarEdgeEnergySiteMeterAPI
 from APIDataRetriever.SolarEdgeEnergyComponentAPI import SolarEdgeEnergyComponentAPI
 from APIDataRetriever.eGaugeAPI import EgaugeAPI
+from APIDataRetriever.EgaugeMeterRead import EgaugeMeterReads
+from DBCreator.create_tables import *
+from DataLoader.site_inverter_production_loader import *
+from DataLoader.meter_reads_loader import *
 import pprint
 
 from config import config
@@ -94,7 +98,7 @@ def daily_site_production_load():
 	_end = '2020-03-02'
 	_timeunit = 'DAY'
 	sesm = SolarEdgeEnergySiteMeterAPI(company_name='test_company_name',start_date=_start,end_date=_end,time_unit=_timeunit)
-	sesm.run_bulk_energy()
+	print(sesm.run_bulk_energy())
 
 def eGauge_test_dev():
 	_start = '2020-03-01'
@@ -140,30 +144,92 @@ def special_maulik_ask():
 	eg = EgaugeAPI(start_date=_start,end_date=_end)
 	eg.special_date_loop()
 
+def eGauge_run_bulk_production_test():
+	_start = '2020-03-01'
+	_end = '2020-03-04'
+	_end = None
+	_company_name = 'NCS'
+	eg = EgaugeAPI(start_date=_start,end_date=_end, company_name=_company_name)
+	eg.run_bulk_production()
 
-def main():
+def eGauge_meter_read_test():
+	date = '2020-04-01'
+	company_name = 'NCS'
+	egm = EgaugeMeterReads(date=date,company_name=company_name)
+	print(egm.date)
+	print(egm.run_bulk_meter_read())
 
-	#api_test()
+def create_tables_test():
+	cloud_connect = True
+	print(test_connection())
+
+def create_projects_table_test():
+	cloud_connect = True
+	create_projects_table(cloud_connect)
+
+def create_all_tables_test():
+	cloud_connect = True
+	create_all_tables(cloud_connect)
+
+def load_site_inverter_test():
+	create_all_tables_test()
+	file_path = r'C:\Users\slin2\Documents\GitHub\solar_production_reporting\raw_data\NCS\SolarEdge\site_production\bulk_energy_2019-01-01.json'
 	
-	#solaredge_api_test()
+	load_single_file(file_path)
 
-	#site_list_test()
+def load_folder_to_db_test():
+	#create_all_tables_test()
+	folder = r'C:\Users\slin2\Documents\GitHub\solar_production_reporting\raw_data\NCS\SolarEdge\site_production'
+	load_files_to_db(folder=folder)
 
-	#site_meter_production_test()
+def xml_loader_test():
+	meter_reads_main()
+	#meter_reads_loader.get_data(file_path)
+	
+def main():
+	
+	#LOADER
+	#load_site_inverter_test()
+	#load_folder_to_db_test()
 
-	#site_component_prodution_test()
+	#XML loader
+	xml_loader_test()
 
-	#daily_site_production_load()
 
-	eGauge_test_dev()
+	#DB CREATOR TESTS
+	#create_tables_test() # tests the connection
+	#create_projects_table_test() # makes a single table
+	#create_all_tables_test() # makes all tables
+
+
+	# API TESTS (SOLAREDGE)
+	#api_test() # tests the connection
+	
+	#solaredge_api_test() # tests the SE connection
+
+	#site_list_test() # tests the site list method
+
+	#site_meter_production_test() # tests the site meter api
+
+	#site_component_prodution_test() # outside of scope
+
+	#daily_site_production_load() # tests daily production load
+
+	# EGAUGE TESTS
+	#eGauge_test_dev()
 
 	#eGauge_test_csv_dev()
 
 	#eGauge_load_sites()
 
+	#eGauge_run_bulk_production_test()
+
 	#eGauge_run_all_sites()
 
 	#special_maulik_ask()
+
+	#eGauge_meter_read_test()
+
 
 if __name__ == '__main__':
 	main()
