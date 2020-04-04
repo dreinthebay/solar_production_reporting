@@ -33,96 +33,11 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		self.equipment_company_name = 'eGauge'
 
-		self.start_date = datetime.datetime.strptime(self.start_date, '%Y-%m-%d')
+		self.start_date = datetime.datetime.strptime(self.start_date, '%Y-%m-%d') if start_date else None
 
-		self.end_date = datetime.datetime.strptime(self.end_date, '%Y-%m-%d')
-
-		# deprecated
-		self.site_name = '37006'
-
-		# deprecated
-		self.get_site_id()
-
-		# deprecated
-		self.REG = 'gen'
-
-		# deprecated
-		self.data = {}
+		self.end_date = datetime.datetime.strptime(self.end_date, '%Y-%m-%d') if end_date else None
 
 		self.error_list = []
-
-	def get_site_production(self,site_id,start_date,end_date):
-		'''
-		creates url for api and makes the api call
-		returns the api payload text (which maybe empty) 
-		'''
-		# gets the production data for start and end date of egauge site
-
-		site_production_xml_url = 'http://egauge{0}.egaug.es//cgi-bin/egauge-show?a&T={1},{2}'.format(
-			site_id,end_date,start_date)
-
-		payload = self.call_api(site_production_xml_url)
-
-		return payload
-
-	# this needs to return the full path of the file		
-	def run_site_production(self,site_id,start_date,end_date):
-		'''
-		retrieves and writes raw data to production file
-		returns success of file write and the full path of the new file
-		'''
-
-		payload = self.get_site_production(site_id,start_date,end_date)
-
-		file_name = '{}_to_{}_production_for_{}.txt'.format(
-			site_id,str(start_date.date()),str(end_date.date())
-			)
-
-		return self.write_payload(payload, file_name, 'production')
-
-	# TODO: Reflect on the dictionary. Potentially make this a list?
-	def run_bulk_production(self):
-		'''
-		retrieves and writes data for each site
-		returns whether the run had no errors (boolean) and a dictionary of each site name and full filepath of payload
-		'''
-		clean_run = True # true if no errors during run, false if any error
-
-		start_date = self.start_date # the start date, in the past
-		
-		end_date = self.end_date # the end date, more recent
-		
-		sites = self.get_site_list() # gets all egauge sites
-		
-		file_site_dict = {} # initialize dictionary of sites and payloads
-		
-		i = 0 # iterater for debugging
-		
-		# loop through all sites and get production
-		for site in sites:
-		
-			print('{}. {} fetching data ...'.format(i,site))
-		
-			success, file_path = self.run_site_production(site,start_date,end_date)
-		
-			if success:
-		
-				file_site_dict[site] = file_path
-		
-			else:
-				# TODO: make better error handling
-				# throw errors
-				print('FAILURE TO LOAD SITE ',site)
-		
-				self.error_list.append(site) # append to error list?
-		
-				file_site_dict[site] = None # add empty entry
-		
-				clean_run = False # add flag
-		
-			i += 1
-		
-		return clean_run, file_site_dict
 
 
 	# TODO: Move this function to the APIDataGetter file
@@ -133,10 +48,17 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 	def call_api(self, url):
 
 		try:
-			r = requests.get(url)
-		except Exception as e:
-			raise e
-			return None
+		
+			r = requests.get(url)#, timeout=15)
+		
+		except requests.exceptions.ConnectionError as e:
+		#except requests.exceptions.ConnectTimeout as e:
+			
+			print('\n\n\n\n\n\nConnection TIME OUT \n',url,'\n\n\n\n\n\n\n')
+
+			self.error_list.append(url)
+		
+			return ''
 
 		if r.text:
 			
@@ -144,128 +66,38 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return None
 
-
-	# deprecated
-	def make_api_url(self, future, past):
-
-		url = 'https://egauge{}.egaug.es//cgi-bin/egauge-show?a&T={},{}'.format(self.api_site, future, past)
-
-		return url
-
-
-
-	# deprecated
-	# TODO standardize
-	def run_site_production_old(self):
+	def write_payload(self, payload, file_name, sub_directory):
 		
-		self.date_loop()
+		payload, empty_payload = self.verify_payload_not_empty(payload)
+
+		file = self.make_file_path(file_name, sub_directory)
+
+		if str(file_name)[-3:].lower() == 'csv':
+			#print('in csv write...')
+			clean_write = self.write_csv_to_file(payload, file)
 		
-		#file_name = '{}_production_from_{}_to_{}.json'.format(self.site_name,str(self.start_date.date()),str(self.end_date.date()))
-		# business request on naming convention
-		file_name = '{}_to_{}_production_for_{}.json'.format(str(self.start_date.date()),str(self.end_date.date()),self.site_name)
+		else:
 		
-		self.write_payload(self.data, file_name, 'production')
+			clean_write = self.write_xml_to_file(payload, file)
 		
-		return True
+		return clean_write, file
 
-	# deprecated
-	def get_site_id(self):
-
-		try:
-			self.api_site = config(section='egauge')['site_id']
-		except:
-			self.api_site = 'egauge37006.egaug.es/'
-
-		pass
-
-	# deprecated
-	# TODO
-	def get_delta_energy(self, payload):
-
-		pass
-
-		#{'site':'1234fgasdf','data':{'units':'Wh','dates':{'2019-03-01':12341}}}
-
-	# deprecated
-	#TODO break this method up
-	def date_loop(self):
-		'''
-		This function gets production data only for each day in a date range for one site
-		'''
-		cur_date = self.start_date
-
-		self.get_site_id()
-
-		self.data['site'] = self.site_name
-
-		self.data['data'] = {'units':'kWh','dates':{}}
-
-		
-
-		print('running all dates between ', cur_date, ' and ', self.end_date,' for eGauge system ', self.site_name)
-
-
-		while cur_date < self.end_date:
-
-			print('date is now ', cur_date)
-
-			cur_time = int(cur_date.replace(tzinfo=timezone.utc).timestamp())
-
-			end_time = cur_time + 24*60*60 - 1
-
-			url = self.make_api_url(end_time,cur_time)
+	def write_xml_to_file(self, payload, file):
 	
-
-			print(url)
-
-			payload = self.call_api(url)
-
-			print(str(payload)[:100])
-
-			#print(payload,'\n\n')
-
-			root = ET.fromstring(payload)
-			
-			reg_ids = {}
-			for child in root.findall('data'):
-				for idx, cname in enumerate(child.findall('cname')):
-					reg_ids[cname.text] = idx # we know REG is in slot idx in the data sets
-
-			# find the two column values in the two data sets based on the idx
-			now_val  = None
-			then_val = None
-			now_found = False
-			for child in root.findall('data'): # go into data tag
-			    for idx, column in enumerate(child.find('r')): # enumerate through <r> tag
-			        if idx == reg_ids[self.REG]: # we found the slot of the REG
-			            if not now_found: # have we already found the first 'data' tag?
-			                now_val = int(column.text) # no, this is the first
-			                now_found = True
-			            else:
-			                then_val = int(column.text) # yes, we already found the first
-
-            # energy values are in watt-seconds (joules), convert to kWh
-			diff = float((now_val - then_val)/3600000)
-			print('Difference: {} kWh'.format(diff))
-
-			key = str(cur_date.date())
-
-			self.data['data']['dates'][key] = diff
-
-
-			# average value is kWh / hours
-			print('Average: {} kW'.format(diff/(24/60/60)))
-
-			cur_date += datetime.timedelta(days=1) 
-
-		print('finished loop')
-
-		print('the data dictionary is')
-
-		pprint.pprint(self.data)
-
-		return self.data
-
+		try:
+	
+			with open(file, 'w') as f:
+	
+				f.write(payload)
+	
+			return True
+	
+		except Exception as e:
+	
+			raise e
+	
+		return False
+	
 	def load_site_keys(self):
 		'''
 		This method will select the site names from an excel file that was provided by the company
@@ -308,9 +140,6 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		'''
 		return non_ignored_sites
 
-
-
-	
 	def load_ignored_sites(self):
 
 		file_name = 'system_ignore_list.csv'
@@ -321,110 +150,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 
 		return ignore_list
 
-
-	# only for special project
-	def special_date_loop(self):
-		'''
-		special date loop gets data between the start and end periods, which may not be daily.
-		The api query is made, data is returned and parsed in xml for production data only (specifically gen) 
-		the data is stored in a dictionary, which can later be converted into csv if necessary
-
-		'''
-		# for maulik's request for date for a month
-		self.REG = 'gen'
-
-		cur_date = self.start_date
-
-		sites = self.get_site_list()
-		
-		self.data['sites'] = {}
-
-		i = 0
-
-		for site in sites:
-			
-			if i in [7,10]:
-				print('skipping {}...'.format(site))
-			else:
-				print('{}. {} data...'.format(i,site))
-
-				temp = {'site':site,'data':{'units':'kWh','values':{}}}
-				#self.data['site'] = self.site_name
-
-				#self.data['data'] = {'units':'kWh','dates':{}}
-
-				print('running all dates between ', cur_date, ' and ', self.end_date,' for eGauge system ', site)
-
-				# run once form start date to end date of month
-
-				cur_time = int(cur_date.replace(tzinfo=timezone.utc).timestamp())
-
-				end_time = int(self.end_date.replace(tzinfo=timezone.utc).timestamp())
-				
-				self.api_site = str(site) + '.egaug.es/'
-
-				url = self.make_api_url(end_time,cur_time)
-
-				print(url)
-
-				payload = self.call_api(url)
-
-				#print(payload,'\n\n')
-
-				root = ET.fromstring(payload)
-				try:
-					reg_ids = {}
-					for child in root.findall('data'):
-						for idx, cname in enumerate(child.findall('cname')):
-							reg_ids[cname.text] = idx # we know REG is in slot idx in the data sets
-
-					# find the two column values in the two data sets based on the idx
-					now_val  = None
-					then_val = None
-					now_found = False
-					for child in root.findall('data'): # go into data tag
-					    for idx, column in enumerate(child.find('r')): # enumerate through <r> tag
-					        if idx == reg_ids[self.REG]: # we found the slot of the REG
-					            if not now_found: # have we already found the first 'data' tag?
-					                now_val = int(column.text) # no, this is the first
-					                now_found = True
-					            else:
-					                then_val = int(column.text) # yes, we already found the first
-
-			        # energy values are in watt-seconds (joules), convert to kWh
-					diff = float((now_val - then_val)/3600000)
-					print('Difference: {} kWh'.format(diff))
-
-					key = str(cur_date.date())
-
-					temp['data']['values']['date'] = key
-					temp['data']['values']['value'] = diff
-
-					# average value is kWh / hours
-					print('Average: {} kW'.format(diff/(24/60/60))) 
-
-				except Exception as e:
-					print('no generation found')
-
-
-				self.data['sites'][i] = temp
-
-			i += 1
-
-		print('finished run')
-
-		print('the data dictionary is')
-
-		pprint.pprint(self.data)
-
-		file_name = 'special_all_egauge_production_from_{}_to_{}.json'.format(
-			str(self.start_date.date()),str(self.end_date.date()))
-		
-		self.write_payload(self.data, file_name, 'production')
-		
-		return True
-
-	def get_csv_data_all_time(self):
+	def get_csv_data_all_time(self, site_id):
 
 		'''
 		This function gets data from all time, regardless of date range passed to the object
@@ -436,7 +162,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		url = 'http://{}/cgi-bin/egauge-show?c&T={},{}'.format(self.api_site, future, past)
 		'''
 		# get all daily production all time
-		url = 'http://{}/cgi-bin/egauge-show?c'.format(self.api_site)
+		url = 'http://egauge{}.egaug.es//cgi-bin/egauge-show?c'.format(site_id)
 
 		print(url)
 		
@@ -449,7 +175,7 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		payload = r.text
 		
 		# make new file
-		file_name = '{0}_all_system_production_to_{1}.csv'.format(self.site_name
+		file_name = '{0}_all_system_production_to_{1}.csv'.format(site_id
 			,self.end_date.date())
 		sub_directory = 'production'
 		file = self.make_file_path(file_name, sub_directory)
@@ -478,57 +204,6 @@ t Integer (U32) Specifies the timestamp of the last row to be returned.
 		print('file_name = ',file_name)
 		#print()
 		return self.write_payload(payload, file_name, 'production')
-
-
-	# deprecated
-	def run_all_sites_date_range(self):
-		
-		sites = self.get_site_list()
-		
-		i = 0
-
-		for site in sites:
-
-			print('{}. {} fetching data ...'.format(i,site))
-			
-			self.api_site = str(site) + '.egaug.es/'
-			
-			self.run_site_production_old()
-
-			i += 1
-
-		return success, self.data
-
-	# deprecated
-	def run_all_sites(self):
-		'''
-		This method gets all daily data from a site over all history  
-		'''
-
-		sites = self.get_site_list()
-
-		print('looping through sites\nS i t e \n--------------')
-
-		i = 0
-
-		for site in sites:
-			
-			print('{}. {} fetching data ...'.format(i,site))
-			
-			self.api_site = str(site) + '.egaug.es/'
-
-			#if site == 'eGauge45512'
-			#.egaug.es/
-
-			if i > 8:
-				try:
-					self.get_csv_data_all_time()
-				except Exception as e:
-					raise e
-					print('failed to get data from site ', site)
-			i += 1
-
-		print('end sites loop')
 
 
 
