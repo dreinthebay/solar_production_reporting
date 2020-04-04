@@ -4,9 +4,8 @@ from APIDataRetriever.eGaugeAPI import EgaugeAPI
 
 class EgaugeDailyProductionAPI(EgaugeAPI):
 	"""docstring for EgaugeDailyProductionAPI"""
-	def __init__(self, arg):
-		super(EgaugeDailyProductionAPI, self).__init__()
-		self.arg = arg
+	def __init__(self, start_date, end_date, company_name='NCS'):
+		super(EgaugeDailyProductionAPI, self).__init__(company_name=company_name,start_date=start_date,end_date=end_date)
 		
 	def run_site_production(self,site_id,start_date,end_date):
 		'''
@@ -75,7 +74,8 @@ class EgaugeDailyProductionAPI(EgaugeAPI):
 	def get_site_production(self,site_id,start_date,end_date)
 		
 		site_production_xml_url = 'http://egauge{site_id}.egaug.es//cgi-bin/egauge-show?a&T={end_date},{start_date}'.format(
-				site_id=site_id,end_date=end_date,start_date=start_date)
+				
+				site_id=site_id, end_date=end_date, start_date=start_date)
 
 		print(site_production_xml_url)
 
