@@ -1,137 +1,132 @@
 import psycopg2
-from config import config
+import psycopg2.extras
 import os
-import json
-import csv
-
-# https://wiki.postgresql.org/wiki/Using_psycopg2_with_PostgreSQL
-
-# http://www.postgresqltutorial.com/postgresql-python/connect/
-
+from config import config
 
 class DataLoader(object):
 	"""docstring for DataLoader"""
-	def __init__(self,cloud_connect=True,company_name='generic'):
-		self.app_folder = self.get_app_dir()
-		self.cloud_connect = cloud_connect
+	def __init__(self, column_names, table_name, company_name='NCS',file_path=None, folder_path=None, dictionary_of_files=None):
+
 		self.company_name = company_name
-		self.equipment_company_name = 'generic'
 
-	def get_app_dir(self):
-		
-		return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+		self.table_name = table_name
 
-	def get_file_path(self, file_name, sub_directory=None):
-		
-		file_path = os.path.join(self.app_folder, 'raw_data', self.company_name, self.equipment_company_name, sub_directory, file_name)
-
-		return file_path
-
-	def read_json_data_from_file(self, file_path):
-		
-		with open(file_path) as json_file:
-			data = json.load(json_file)	
-		return data
+		self.columns = column_names
 	
-	''' TODO: make csv reader
-	def read_csv_data_from_file(self, file_path):
-		with open(file_path, mode='r') as csv_file:
-			data = csv.reader(csv_file)
-			for d in data:
-				print(d)
-		return data
-	'''	
-	def get_json_data(self,file_name, sub_directory):
-		
-		file_path = self.get_file_path(file_name=file_name, sub_directory=sub_directory)
-		
-		data = self.read_json_data_from_file(file_path)
-		
-		return data
+	def get_connection(self):
+	    
+	    params = self.connect_to_postgres()
 
-	def connect_to_postgres(self):
-		
-		print('connecting to postgresdb')
-		
-		params = self.get_postgres_params()
-		
-		self.conn = psycopg2.connect(**params)
-		
-		self.cur = self.conn.cursor()
-		
-		print('connection made')
-		
+	    conn = psycopg2.connect(**params)
+
+	    return conn
+
+	def connect_to_postgres(self, cloud_connect=True):
+	    
+	    print('testing cloud connect = ', cloud_connect)
+	    
+	    if cloud_connect:
+
+	        print('Connection type: Cloud')
+
+	        return config(section='postgresql')
+
+	    else:
+
+	        print('Connection type: Localhost')
+
+	        return config(section='localhost')
+
+	def make_sql_string(self, table_name, list_of_column_names):
+	    
+	    column_values = ','.join(list_of_column_names)
+	    
+	    values = ','.join(['%('+str(x)+')s' for x in list_of_column_names])
+	    
+	    s = """INSERT INTO {table_name} ({column_values}) VALUES ({values})""".format(
+	    table_name=table_name,
+	    column_values=column_values,
+	    values=values
+	    )
+	    
+	    print(s)
+	    
+	    return s
+
+	def sql_query(self, conn, sql_string, list_of_dict):
+	    
+	    with conn.cursor() as cursor:
+	    
+	        iter_data = (d for d in list_of_dict)
+	    
+	        print(type(iter_data))
+	    
+	        psycopg2.extras.execute_batch(
+	    
+	            cursor,
+	    
+	            sql_string,
+	    
+	            iter_data
+	        )
+	    
+	    conn.commit()
+
+	    return True
+
+	def load_single_file(self, file_path):
+
+		with self.get_connection() as conn:
+
+			#conn = get_connection()
+			self.load_file_to_db(file_path, conn)
+
+			#self.close_connection(conn)
+
 		return True
 
-	def get_postgres_params(self):
+	def load_folder_to_db(self, folder=None):
+	
+		if folder:
 
-		if self.cloud_connect:
+			with self.get_connection() as conn:
 
-			print('Connection type: Cloud')
+				#folder = file_path = os.path.join(self.app_folder, 'raw_data', self.company_name, self.equipment_company_name, sub_directory, file_name)
 
-			
-			#if str(self.company_name).lower() == 'barrier':
+				for file in os.listdir(folder):
 
-			#	return config(filename='barrier_cloudsql.ini')
-			
-			#if str(self.company_name).lower() == 'massam':
+					file_path = folder + os.sep + file
 
-			#	return config(file_name='')
-			
-			#return config(filename='cloudsql_dev.ini')	
-			return config()	
+					print(file_path)
 
+					self.load_file_to_db(file_path, conn)
+
+				#self.close_connection(conn)
 
 		else:
+			print('incorrect parameters passed')
 
-			print('Connection type: Localhost')
+		return 1
 
-			return config(filename='database.ini')
-
-	def disconnect(self):
+	def load_filelist_to_db(self, file_list=None):
+		# if file list passed
+		if file_list:
 		
-		print('disconnecting from database')
+			with self.get_connection() as conn:
 		
-		self.cur.close()
-		
-		self.conn.close()
-		
-		print('disconnected.')
-		
-		return True
-
-	def execute_insert_query(self, sql_query):
-		
-		query_success = True
-		
-		try:
-		
-			#self.cur.execute(sql, queries)
-
-			self.cur.execute(sql_query)
-		
-		except Exception as e:
+				for file in file_list:
 			
-			print('error on big query ')
-			
-			self.disconnect()
-			
-			query_success = False
-	
-			raise e
+					self.load_file_to_db(file, conn)
+				
+				#self.close_connection(conn)
+		
+		else:
+		
+			print('incorrect parameters passed')
 
-		self.conn.commit()
+		return 1
 
-		return query_success
+	def close_connection(self,conn):
+		conn.close()
+		return 1
 
-if __name__ == '__main__':
-	dl = DataLoader()
-	print(dl.app_folder)
-	print(dl.cloud_connect)
-	
-	file = dl.get_file_path(file_name='site_225542_details.txt',sub_directory='site_details')
-
-	print(dl.get_data(file))
-	
-	#data = dl.read_csv_data_from_file('csv_test.csv')
-	#print(data)
