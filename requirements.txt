@@ -1,0 +1,6 @@
+psycopg2
+json
+psycopg2.extras
+datetime
+pandas
+numpy
